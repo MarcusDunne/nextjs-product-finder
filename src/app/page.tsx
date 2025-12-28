@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProductCard from '@/components/ProductCard';
 import SearchBar from '@/components/SearchBar';
 import FilterPanel from '@/components/FilterPanel';
@@ -20,32 +20,33 @@ export default function Home() {
     sortBy: 'name',
   });
 
+  // Memoize applyFilters to prevent unnecessary re-renders
+  const applyFilters = useCallback(() => {
+    const filtered = filterProducts(products, searchTerm, filters);
+    setFilteredProducts(filtered);
+  }, [products, searchTerm, filters]);
+
   // Fetch products on mount
   useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchProducts();
+        setProducts(data);
+      } catch (error) {
+        console.error('Failed to load products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     loadProducts();
   }, []);
 
   // Apply filters when products, search, or filters change
   useEffect(() => {
     applyFilters();
-  }, [products, searchTerm, filters]);
-
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchProducts();
-      setProducts(data);
-    } catch (error) {
-      console.error('Failed to load products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
-    const filtered = filterProducts(products, searchTerm, filters);
-    setFilteredProducts(filtered);
-  };
+  }, [applyFilters]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
